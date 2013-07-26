@@ -23,7 +23,7 @@ var _ = require("underscore"),
     jsdom = require("jsdom"),
     urlparse = require("url").parse,
     DatabankObject = require("databank").DatabankObject,
-    ih8it = require("./ih8it");
+    pump2rss = require("./ih8it");
 
 var ActivityObject = DatabankObject.subClass("activityobject");
 
@@ -73,7 +73,7 @@ ActivityObject.httpHead = function(url, callback) {
         mod = (options.protocol == 'https:') ? https : http;
 
     options.headers = {
-        "User-Agent": ih8it.userAgent()
+        "User-Agent": pump2rss.userAgent()
     };
 
     mod.request(options, function(resp) {
@@ -99,7 +99,7 @@ ActivityObject.httpGet = function(url, callback) {
         mod = (options.protocol == 'https:') ? https : http;
 
     options.headers = {
-        "User-Agent": ih8it.userAgent()
+        "User-Agent": pump2rss.userAgent()
     };
 
     mod.request(options, function(resp) {

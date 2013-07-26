@@ -1,6 +1,6 @@
 // app.js
 //
-// main function for h8in
+// main function for pump2rss
 //
 // Copyright 2013, E14N https://e14n.com/
 //
@@ -33,28 +33,28 @@ var fs = require("fs"),
     RememberMe = require("./models/rememberme"),
     User = require("./models/user"),
     Host = require("./models/host"),
-    ih8it = require("./models/ih8it"),
+    pump2rss = require("./models/pump2rss"),
     config,
     defaults = {
         port: 4000,
         address: "localhost",
         hostname: "localhost",
         driver: "disk",
-        name: "ih8.it",
+        name: "pump2rss.com",
         description: "Widget for hating things on the federated social web.",
         verb: "dislike"
     },
     log,
     logParams = {
-        name: "ih8.it",
+        name: "pump2rss.com",
         serializers: {
             req: Logger.stdSerializers.req,
             res: Logger.stdSerializers.res
         }
     };
 
-if (fs.existsSync("/etc/ih8.it.json")) {
-    config = _.defaults(JSON.parse(fs.readFileSync("/etc/ih8.it.json")),
+if (fs.existsSync("/etc/pump2rss.com.json")) {
+    config = _.defaults(JSON.parse(fs.readFileSync("/etc/pump2rss.com.json")),
                         defaults);
 } else {
     config = defaults;
@@ -77,17 +77,17 @@ log.info("Initializing");
 log.info({name: config.name, 
           description: config.description, 
           hostname: config.hostname},
-         "Initializing ih8it object");
+         "Initializing pump2rss object");
 
-ih8it.name        = config.name;
-ih8it.description = config.description;
-ih8it.hostname    = config.hostname;
+pump2rss.name        = config.name;
+pump2rss.description = config.description;
+pump2rss.hostname    = config.hostname;
 
-ih8it.protocol = (config.key) ? "https" : "http";
+pump2rss.protocol = (config.key) ? "https" : "http";
 
 if (!config.params) {
     if (config.driver == "disk") {
-        config.params = {dir: "/var/lib/ih8.it/"};
+        config.params = {dir: "/var/lib/pump2rss.com/"};
     } else {
         config.params = {};
     }
@@ -170,14 +170,14 @@ async.waterfall([
         log.info("Configuring app");
 
         app.configure(function(){
-            var serverVersion = 'ih8.it/'+ih8it.version + ' express/'+express.version + ' node.js/'+process.version,
+            var serverVersion = 'pump2rss.com/'+pump2rss.version + ' express/'+express.version + ' node.js/'+process.version,
                 versionStamp = function(req, res, next) {
                     res.setHeader('Server', serverVersion);
                     next();
                 },
                 appObject = function(req, res, next) {
-                    req.ih8it = ih8it;
-                    res.local("ih8it", ih8it);
+                    req.pump2rss = pump2rss;
+                    res.local("pump2rss", pump2rss);
                     next();
                 };
 
@@ -323,7 +323,7 @@ async.waterfall([
             hostname: config.hostname,
             app: app,
             bank: db,
-            userAgent: ih8it.userAgent()
+            userAgent: pump2rss.userAgent()
         });
 
         // Configure this global object

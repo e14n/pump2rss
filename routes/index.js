@@ -25,14 +25,14 @@ var wf = require("webfinger"),
     RequestToken = require("../models/requesttoken"),
     RememberMe = require("../models/rememberme"),
     ActivityObject = require("../models/activityobject"),
-    ih8it = require("../models/ih8it");
+    pump2rss = require("../models/ih8it");
 
 exports.hostmeta = function(req, res) {
     res.json({
         links: [
             {
                 rel: "dialback",
-                href: ih8it.url("/dialback")
+                href: pump2rss.url("/dialback")
             }
         ]
     });

@@ -22,7 +22,7 @@ var _ = require("underscore"),
     qs = require("querystring"),
     OAuth = require("oauth").OAuth,
     DatabankObject = require("databank").DatabankObject,
-    ih8it = require("./ih8it"),
+    pump2rss = require("./ih8it"),
     RequestToken = require("./requesttoken");
 
 var Host = DatabankObject.subClass("host");
@@ -111,11 +111,11 @@ Host.getCredentials = function(endpoint, callback) {
         function(callback) {
             var body = qs.stringify({type: "client_associate",
                                      application_type: "web",
-                                     application_name: ih8it.name,
-                                     redirect_uris: ih8it.url("/authorized")});
+                                     application_name: pump2rss.name,
+                                     redirect_uris: pump2rss.url("/authorized")});
 
             Host.dialbackClient.post(endpoint,
-                                     ih8it.hostname,
+                                     pump2rss.hostname,
                                      body,
                                      "application/x-www-form-urlencoded",
                                      callback);
@@ -212,10 +212,10 @@ Host.prototype.getOAuth = function() {
                      host.client_id,
                      host.client_secret,
                      "1.0",
-                     ih8it.url("/authorized/"+host.hostname),
+                     pump2rss.url("/authorized/"+host.hostname),
                      "HMAC-SHA1",
                      null, // nonce size; use default
-                     {"User-Agent": "ih8.it/0.1.0"});
+                     {"User-Agent": "pump2rss.com/0.1.0"});
 };
 
 module.exports = Host;
