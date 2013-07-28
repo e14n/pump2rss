@@ -20,26 +20,21 @@ var _ = require("underscore"),
     async = require("async"),
     uuid = require("node-uuid"),
     DatabankObject = require("databank").DatabankObject,
-    pump2rss = require("./ih8it"),
+    pump2rss = require("./pump2rss"),
     Host = require("./host");
 
 var User = DatabankObject.subClass("user");
 
 User.schema = {
-    "user": {
-        pkey: "id",
-        fields: ["name",
-                 "token",
-                 "secret",
-                 "inbox",
-                 "outbox",
-                 "followers",
-                 "created",
-                 "updated"]
-    },
-    "userlist": {
-        pkey: "id"
-    }
+    pkey: "id",
+    fields: ["name",
+             "token",
+             "secret",
+             "inbox",
+             "outbox",
+             "followers",
+             "created",
+             "updated"]
 };
 
 User.fromPerson = function(person, token, secret, callback) {
@@ -89,48 +84,6 @@ User.fromPerson = function(person, token, secret, callback) {
     ], callback);
 };
 
-// Keep a list of existing users so we can do periodic updates
-
-User.prototype.afterCreate = function(callback) {
-    var user = this,
-        bank = User.bank();
-
-    bank.append("userlist", 0, user.id, function(err, list) {
-        if (err) {
-            callback(err);
-        } else {
-            callback(null);
-        }
-    });
-};
-
-// Deleted users come off the list
-
-User.prototype.afterDel = function(callback) {
-    var user = this;
-
-    async.parallel([
-        function(callback) {
-            var bank = User.bank();
-            bank.remove("userlist", 0, user.id, callback);
-        },
-        function(callback) {
-            var bank = Plot.bank();
-            async.forEach(user.plots,
-                          function(plotID, callback) {
-                              bank.del("plot", plotID, callback);
-                          },
-                          callback);
-        }
-    ], function(err, results) {
-        if (err) {
-            callback(err);
-        } else {
-            callback(null);
-        }
-    });
-};
-
 User.getHostname = function(id) {
     var parts = id.split("@"),
         hostname = parts[1].toLowerCase();
@@ -144,40 +97,6 @@ User.prototype.getHost = function(callback) {
         hostname = User.getHostname(user.id);
 
     Host.get(hostname, callback);
-};
-
-User.prototype.postActivity = function(act, callback) {
-
-    var user = this;
-
-    async.waterfall([
-        function(callback) {
-            user.getHost(callback);
-        },
-        function(host, callback) {
-            var oa = host.getOAuth(),
-                json = JSON.stringify(act);
-
-            oa.post(user.outbox, user.token, user.secret, json, "application/json", callback);
-        },
-        function(data, response, callback) {
-            var posted;
-            if (response.statusCode >= 400 && response.statusCode < 600) {
-                callback(new Error("Error " + response.StatusCode + ": " + data));
-            } else if (!response.headers || 
-                       !response.headers["content-type"] || 
-                       response.headers["content-type"].substr(0, "application/json".length) != "application/json") {
-                callback(new Error("Not application/json"));
-            } else {
-                try {
-                    posted = JSON.parse(data);
-                    callback(null, posted);
-                } catch (e) {
-                    callback(e, null);
-                }
-            }
-        }
-    ], callback);
 };
 
 module.exports = User;
