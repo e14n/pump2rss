@@ -22,10 +22,7 @@ var wf = require("webfinger"),
     uuid = require("node-uuid"),
     User = require("../models/user"),
     Host = require("../models/host"),
-    RequestToken = require("../models/requesttoken"),
-    RememberMe = require("../models/rememberme"),
-    ActivityObject = require("../models/activityobject"),
-    pump2rss = require("../models/ih8it");
+    pump2rss = require("../models/pump2rss");
 
 exports.hostmeta = function(req, res) {
     res.json({
@@ -49,27 +46,5 @@ exports.showFeed = function(req, res, next) {
         url = req.body.url;
 
     async.waterfall([
-        function(callback) {
-            ActivityObject.ensure(url, callback);
-        },
-        function(aobj, callback) {
-            var now = new Date();
-            user.postActivity({
-                verb: req.app.config.verb,
-                object: aobj,
-                published: now.toISOString()
-            }, callback);
-        }
-    ], function(err, posted) {
-        if (err) {
-            next(err);
-        } else {
-            if (src == "button") {
-                res.redirect(url, 303);
-            } else {
-                // XXX: show indicator that h8 happened
-                res.redirect("/", 303);
-            }
-        }
     });
 };

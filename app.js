@@ -202,7 +202,7 @@ async.waterfall([
         log.info("Initializing routes");
 
         app.get('/', routes.index);
-        app.get('/feed/:id', routes.showFeed);
+        app.get('/feed/:webfinger', reqHost, reqPerson, routes.showFeed);
         app.get('/.well-known/host-meta.json', routes.hostmeta);
 
         // Create a dialback client

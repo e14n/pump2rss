@@ -22,7 +22,7 @@ var _ = require("underscore"),
     qs = require("querystring"),
     OAuth = require("oauth").OAuth,
     DatabankObject = require("databank").DatabankObject,
-    pump2rss = require("./ih8it"),
+    pump2rss = require("./pump2rss"),
     RequestToken = require("./requesttoken");
 
 var Host = DatabankObject.subClass("host");
@@ -135,68 +135,6 @@ Host.getCredentials = function(endpoint, callback) {
                 client = JSON.parse(doc);
                 callback(null, client);
             } catch (e) {
-                callback(e, null);
-            }
-        }
-    });
-};
-
-Host.prototype.getRequestToken = function(callback) {
-    var host = this,
-        oa = host.getOAuth();
-
-    async.waterfall([
-        function(callback) {
-            oa.getOAuthRequestToken(callback);
-        },
-        function(token, secret, other, callback) {
-            RequestToken.create({token: token,
-                                 secret: secret,
-                                 hostname: host.hostname},
-                                callback);
-        }
-    ], callback);
-};
-
-Host.prototype.authorizeURL = function(rt, callback) {
-    var host = this,
-        separator;
-
-    if (_.contains(host.authorization_endpoint, "?")) {
-        separator = "&";
-    } else {
-        separator = "?";
-    }
-    
-    return host.authorization_endpoint + separator + "oauth_token=" + rt.token;
-};
-
-Host.prototype.getAccessToken = function(rt, verifier, callback) {
-    var host = this,
-        oa = host.getOAuth();
-
-    oa.getOAuthAccessToken(rt.token, rt.secret, verifier, callback);
-};
-
-Host.prototype.whoami = function(token, secret, callback) {
-    var host = this,
-        oa = host.getOAuth();
-
-    // XXX: ssl
-
-    async.waterfall([
-        function(callback) {
-            oa.get(host.whoami_endpoint, token, secret, callback);
-        }
-    ], function(err, doc, response) {
-        var obj;
-        if (err) {
-            callback(err, null);
-        } else {
-            try {
-                obj = JSON.parse(doc);
-                callback(null, obj);
-            } catch(e) {
                 callback(e, null);
             }
         }
