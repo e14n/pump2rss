@@ -29,8 +29,6 @@ var fs = require("fs"),
     Databank = databank.Databank,
     DatabankObject = databank.DatabankObject,
     DatabankStore = require('connect-databank')(express),
-    RequestToken = require("./models/requesttoken"),
-    RememberMe = require("./models/rememberme"),
     User = require("./models/user"),
     Host = require("./models/host"),
     pump2rss = require("./models/pump2rss"),
@@ -40,21 +38,21 @@ var fs = require("fs"),
         address: "localhost",
         hostname: "localhost",
         driver: "disk",
-        name: "pump2rss.com",
-        description: "Widget for hating things on the federated social web.",
+        name: "pump2rss",
+        description: "Service to convert pump.io Activity Streams JSON into RSS",
         verb: "dislike"
     },
     log,
     logParams = {
-        name: "pump2rss.com",
+        name: "pump2rss",
         serializers: {
             req: Logger.stdSerializers.req,
             res: Logger.stdSerializers.res
         }
     };
 
-if (fs.existsSync("/etc/pump2rss.com.json")) {
-    config = _.defaults(JSON.parse(fs.readFileSync("/etc/pump2rss.com.json")),
+if (fs.existsSync("/etc/pump2rss.json")) {
+    config = _.defaults(JSON.parse(fs.readFileSync("/etc/pump2rss.json")),
                         defaults);
 } else {
     config = defaults;
@@ -87,7 +85,7 @@ pump2rss.protocol = (config.key) ? "https" : "http";
 
 if (!config.params) {
     if (config.driver == "disk") {
-        config.params = {dir: "/var/lib/pump2rss.com/"};
+        config.params = {dir: "/var/lib/pump2rss/"};
     } else {
         config.params = {};
     }
@@ -104,14 +102,9 @@ _.extend(config.params.schema, DatabankStore.schema);
 
 // Now, our stuff
 
-_.each([RequestToken, Host, RememberMe], function(Cls) {
+_.each([Host, User], function(Cls) {
     config.params.schema[Cls.type] = Cls.schema;
 });
-
-// User has a global list
-
-_.extend(config.params.schema, User.schema);
-_.extend(config.params.schema, Host.schema);
 
 var db = Databank.get(config.driver, config.params);
 
@@ -170,7 +163,7 @@ async.waterfall([
         log.info("Configuring app");
 
         app.configure(function(){
-            var serverVersion = 'pump2rss.com/'+pump2rss.version + ' express/'+express.version + ' node.js/'+process.version,
+            var serverVersion = 'pump2rss/'+pump2rss.version + ' express/'+express.version + ' node.js/'+process.version,
                 versionStamp = function(req, res, next) {
                     res.setHeader('Server', serverVersion);
                     next();
@@ -204,115 +197,12 @@ async.waterfall([
             app.use(express.errorHandler());
         });
 
-        // Auth middleware
-
-        var userAuth = function(req, res, next) {
-
-            req.user = null;
-            res.local("user", null);
-
-            if (req.session.userID) {
-                req.log.info({userID: req.session.userID}, "Logging in with session-stored user ID");
-                User.get(req.session.userID, function(err, user) {
-                    if (err) {
-                        next(err);
-                    } else {
-                        req.log.info({userID: user.id}, "Logged in");
-                        req.user = user;
-                        res.local("user", user);
-                        next();
-                    }
-                });
-            } else if (req.cookies.rememberme) {
-                req.log.info({rememberme: req.cookies.rememberme}, "Logging in with rememberme cookie");
-                async.waterfall([
-                    function(callback) {
-                        RememberMe.get(req.cookies.rememberme, callback);
-                    },
-                    function(rm, callback) {
-                        var id = rm.user;
-                        req.log.info({rememberme: req.cookies.rememberme, userID: id}, "Found rememberme cookie");
-                        async.parallel([
-                            function(callback) {
-                                rm.del(callback);
-                            },
-                            function(callback) {
-                                User.get(id, callback);
-                            },
-                            function(callback) {
-                                RememberMe.create({user: id}, callback);
-                            }
-                        ], callback);
-                    }
-                ], function(err, results) {
-                    var rm, user;
-                    if (err && err.name == "NoSuchThingError") {
-                        // Clear the cookie and continue
-                        res.clearCookie("rememberme", {path: "/"});
-                        next();
-                    } else if (err) {
-                        next(err);
-                    } else {
-
-                        user = results[1];
-                        rm = results[2];
-
-                        req.user = user;
-                        res.local("user", req.user);
-                        req.session.userID = req.user.id;
-                        req.log.info({userID: req.user.id}, "Set user");
-
-                        res.cookie("rememberme", rm.uuid, {path: "/", expires: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), httpOnly: true});
-                        req.log.info({rememberme: rm.uuid, userID: req.user.id}, "Set rememberme cookie");
-
-                        next();
-                    }
-                });
-            } else {
-                next();
-            }
-        };
-
-        var userOptional = function(req, res, next) {
-            next();
-        };
-
-        var userRequired = function(req, res, next) {
-            if (!req.user) {
-                next(new Error("User is required"));
-            } else {
-                next();
-            }
-        };
-
-        var noUser = function(req, res, next) {
-            if (req.user) {
-                next(new Error("Already logged in"));
-            } else {
-                next();
-            }
-        };
-
-        var userIsUser = function(req, res, next) {
-            if (req.params.webfinger && req.user.id == req.params.webfinger) {
-                next();
-            } else {
-                next(new Error("Must be the same user"));
-            }
-        };
-
         // Routes
 
         log.info("Initializing routes");
 
-        app.get('/', userAuth, userOptional, routes.index);
-        app.get('/login', userAuth, noUser, routes.login);
-        app.post('/login', userAuth, noUser, routes.handleLogin);
-        app.post('/logout', userAuth, userRequired, routes.handleLogout);
-        app.get('/about', userAuth, userOptional, routes.about);
-        app.get('/h8', userAuth, userRequired, routes.showH8);
-        app.post('/h8', userAuth, userRequired, routes.doH8);
-        app.get('/authorized/:hostname', routes.authorized);
+        app.get('/', routes.index);
+        app.get('/feed/:id', routes.showFeed);
         app.get('/.well-known/host-meta.json', routes.hostmeta);
 
         // Create a dialback client
