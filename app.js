@@ -197,12 +197,28 @@ async.waterfall([
             app.use(express.errorHandler());
         });
 
+        // middleware
+
+        var reqUser = function(req, res, next) {
+
+            var webfinger = req.params.webfinger;
+
+            User.ensureUser(webfinger, function(err, user) {
+                if (err) {
+                    next(err);
+                } else {
+                    req.user = user;
+                    next();
+                }
+            });
+        };
+
         // Routes
 
         log.info("Initializing routes");
 
         app.get('/', routes.index);
-        app.get('/feed/:webfinger', reqHost, reqPerson, routes.showFeed);
+        app.get('/feed/:webfinger', reqUser, routes.showFeed);
         app.get('/.well-known/host-meta.json', routes.hostmeta);
 
         // Create a dialback client

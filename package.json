@@ -1,12 +1,12 @@
 {
-    "name": "ih8.it",
+    "name": "pump2rss",
     "version": "0.1.0-alpha.1",
     "dependencies": {
         "express": "2.5.x",
         "utml": "0.2.x",
         "underscore": "1.4.x",
         "webfinger": "0.1.x",
-        "databank": "0.15.x",
+        "databank": "0.18.x",
         "underscore": "1.4.x",
         "dialback-client": ">=0.1.1",
         "oauth": "0.9.x",
@@ -14,6 +14,7 @@
         "connect-databank": "0.6.x",
         "node-uuid": "1.4.x",
         "bunyan": "0.16.x",
-        "jsdom": "0.5.x"
+        "jsdom": "0.5.x",
+        "validator": "0.4.x",
     }
 }

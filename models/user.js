@@ -18,7 +18,7 @@
 
 var _ = require("underscore"),
     async = require("async"),
-    uuid = require("node-uuid"),
+    wf = require("webfinger"),
     DatabankObject = require("databank").DatabankObject,
     pump2rss = require("./pump2rss"),
     Host = require("./host");
@@ -28,16 +28,56 @@ var User = DatabankObject.subClass("user");
 User.schema = {
     pkey: "id",
     fields: ["name",
-             "token",
-             "secret",
-             "inbox",
              "outbox",
-             "followers",
              "created",
              "updated"]
 };
 
-User.fromPerson = function(person, token, secret, callback) {
+User.ensureUser = function(webfinger, callback) {
+    User.get(webfinger, function(err, user) {
+        if (err && err.name == "NoSuchThingError") {
+            User.discover(webfinger, callback);
+        } else if (err) {
+            callback(err, null);
+        } else {
+            callback(err, user);
+        }
+    });
+};
+
+User.discover = function(webfinger, callback) {
+
+    var selfLink;
+
+    async.waterfall([
+        function(callback) {
+            wf.webfinger(webfinger, "self", callback);
+        },
+        function(results, callback) {
+            selfLink = results;
+            Host.ensureHost(User.getHostname(webfinger), callback);
+        },
+        function(host, callback) {
+            var oa = host.getOAuth();
+            oa.get(selfLink, null, null, callback);
+        },
+        function(body, result, callback) {
+            try {
+                callback(null, JSON.parse(body));
+            } catch (err) {
+                callback(err);
+            }
+        }
+    ], function(err, person) {
+        if (err) {
+            callback(err, null);
+        } else {
+            User.fromPerson(person, callback);
+        }
+    });
+};
+
+User.fromPerson = function(person, callback) {
 
     var id = person.id,
         user,
@@ -48,22 +88,9 @@ User.fromPerson = function(person, token, secret, callback) {
     }
 
     if (!person.links ||
-        !person.links["activity-inbox"] ||
-        !person.links["activity-inbox"].href) {
-        callback(new Error("No activity inbox."));
-        return;
-    }
-
-    if (!person.links ||
         !person.links["activity-outbox"] ||
         !person.links["activity-outbox"].href) {
         callback(new Error("No activity inbox."));
-        return;
-    }
-
-    if (!person.followers ||
-        !person.followers.url) {
-        callback(new Error("No followers."));
         return;
     }
 
@@ -71,14 +98,9 @@ User.fromPerson = function(person, token, secret, callback) {
         function(callback) {
             User.create({id: id,
                          name: person.displayName,
-                         homepage: person.url,
-                         token: token,
-                         secret: secret,
                          created: Date.now(),
                          updated: Date.now(),
-                         inbox: person.links["activity-inbox"].href,
-                         outbox: person.links["activity-outbox"].href,
-                         followers: person.followers.url},
+                         outbox: person.links["activity-outbox"].href},
                         callback);
         }
     ], callback);
