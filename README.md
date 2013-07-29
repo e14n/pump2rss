@@ -1,7 +1,7 @@
 # pump2rss
 
-Translates pump.io-generated activity streams JSON into Atom
-and RSS 2.0.
+Translates pump.io-generated activity streams JSON into
+activitystrea.ms-enhanced Atom.
 
 ## License
 
