@@ -28,19 +28,22 @@ var fs = require("fs"),
     uuid = require("node-uuid"),
     Databank = databank.Databank,
     DatabankObject = databank.DatabankObject,
-    DatabankStore = require('connect-databank')(express),
     User = require("./models/user"),
     Host = require("./models/host"),
     pump2rss = require("./models/pump2rss"),
     config,
     defaults = {
         port: 4000,
-        address: "localhost",
+        address: null,
         hostname: "localhost",
         driver: "disk",
+        params: {dir: "/var/lib/pump2rss/"},
         name: "pump2rss",
         description: "Service to convert pump.io Activity Streams JSON into RSS",
-        verb: "dislike"
+        logfile: null,
+        nologger: false,
+        key: null,
+        cert: null
     },
     log,
     logParams = {
@@ -56,6 +59,10 @@ if (fs.existsSync("/etc/pump2rss.json")) {
                         defaults);
 } else {
     config = defaults;
+}
+
+if (!config.address) {
+    config.address = config.hostname;
 }
 
 if (config.logfile) {
@@ -98,7 +105,6 @@ if (!config.params.schema) {
 }
 
 _.extend(config.params.schema, DialbackClient.schema);
-_.extend(config.params.schema, DatabankStore.schema);
 
 // Now, our stuff
 
@@ -138,7 +144,7 @@ async.waterfall([
 
         DatabankObject.bank = db;
 
-        if (_.has(config, "key")) {
+        if (config.key) {
 
             log.info("Using SSL");
 
@@ -157,8 +163,6 @@ async.waterfall([
         }
 
         // Configuration
-
-        var dbstore = new DatabankStore(db, log, 60000);
 
         log.info("Configuring app");
 
@@ -180,11 +184,6 @@ async.waterfall([
             app.use(versionStamp);
             app.use(appObject);
             app.use(express.bodyParser());
-            app.use(express.cookieParser());
-            app.use(express.methodOverride());
-            app.use(express.session({secret: (_(config).has('sessionSecret')) ? config.sessionSecret : "insecure",
-                                     cookie: {path: '/', httpOnly: true},
-                                     store: dbstore}));
             app.use(app.router);
             app.use(express.static(__dirname + '/public'));
         });
@@ -218,6 +217,7 @@ async.waterfall([
         log.info("Initializing routes");
 
         app.get('/', routes.index);
+        app.post('/feed', routes.redirectFeed);
         app.get('/feed/:webfinger', reqUser, routes.showFeed);
         app.get('/.well-known/host-meta.json', routes.hostmeta);
 

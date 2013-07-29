@@ -39,6 +39,11 @@ exports.index = function(req, res, next) {
     res.render('index', { title: "Welcome" });
 };
 
+exports.redirectFeed = function(req, res, next) {
+    var webfinger = req.body.webfinger;
+    res.redirect(pump2rss.url("/feed/"+webfinger), 303);
+};
+
 exports.showFeed = function(req, res, next) {
 
     var user = req.user;
@@ -50,7 +55,7 @@ exports.showFeed = function(req, res, next) {
         function(host, callback) {
             var oa = host.getOAuth();
             // XXX: caching
-            oa.get(user.outbox, null, null, callback);
+            oa.get(user.links["activity-outbox"].href, null, null, callback);
         },
         function(body, result, callback) {
             try {

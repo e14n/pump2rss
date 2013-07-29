@@ -1,23 +1,17 @@
-<div class="hero-unit">
+<div class="span12">
 
-    <div class="row">
+  <h1>pump2rss.com</h1>
 
-      <div class="span6">
+  <p>Enter a pump handle (<em>user@server.example</em>) below to
+    get an <abbr title="Atom">RSS</abbr> representation of their
+    activity stream.</p>
 
-        <h1>pump2rss.com</h1>
-
-        <p>h8rz gonna h8.</p>
-
-        <p><a class="btn btn-primary" href="/login">Start h8in&apos; &raquo;</a></p>
-
-      </div>
-      
-      <div class="span4">
-
-        <img src="/images/Symbol_thumbs_down.svg" width="371" height="480" class="img-rounded">
-
-      </div>
-
+  <form class="form-inline" action="/feed" method="post">
+    <label class="control-label" for="url">Pump handle</label>
+    <div class="input-append">
+      <input class="span6 input-xxlarge"  id="webfinger" name="webfinger" type="email">
+      <button class="btn btn-xxlarge" type="submit">RSS</button>
     </div>
+  </form>
 
 </div>

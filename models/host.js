@@ -22,8 +22,7 @@ var _ = require("underscore"),
     qs = require("querystring"),
     OAuth = require("oauth").OAuth,
     DatabankObject = require("databank").DatabankObject,
-    pump2rss = require("./pump2rss"),
-    RequestToken = require("./requesttoken");
+    pump2rss = require("./pump2rss");
 
 var Host = DatabankObject.subClass("host");
 

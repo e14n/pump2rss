@@ -15,6 +15,6 @@
         "node-uuid": "1.4.x",
         "bunyan": "0.16.x",
         "jsdom": "0.5.x",
-        "validator": "0.4.x",
+        "validator": "0.4.x"
     }
 }

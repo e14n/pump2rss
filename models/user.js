@@ -27,10 +27,15 @@ var User = DatabankObject.subClass("user");
 
 User.schema = {
     pkey: "id",
-    fields: ["name",
-             "outbox",
-             "created",
-             "updated"]
+    fields: ["content",
+             "displayName",
+             "image",
+             "links",
+             "objectType",
+             "published",
+             "summary",
+             "updated",
+             "url"]
 };
 
 User.ensureUser = function(webfinger, callback) {
@@ -79,14 +84,6 @@ User.discover = function(webfinger, callback) {
 
 User.fromPerson = function(person, callback) {
 
-    var id = person.id,
-        user,
-        bank = User.bank();
-
-    if (id.substr(0, 5) == "acct:") {
-        id = id.substr(5);
-    }
-
     if (!person.links ||
         !person.links["activity-outbox"] ||
         !person.links["activity-outbox"].href) {
@@ -94,16 +91,7 @@ User.fromPerson = function(person, callback) {
         return;
     }
 
-    async.waterfall([
-        function(callback) {
-            User.create({id: id,
-                         name: person.displayName,
-                         created: Date.now(),
-                         updated: Date.now(),
-                         outbox: person.links["activity-outbox"].href},
-                        callback);
-        }
-    ], callback);
+    User.create(person, callback);
 };
 
 User.getHostname = function(id) {
