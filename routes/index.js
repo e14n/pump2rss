@@ -180,7 +180,7 @@ var activityAsFullEntry = function(res, user, item) {
 
     res.write('<title>'+item.displayName+'</title>\n');
 
-    res.write('<activity:verb>'+item.verb+'</activity.verb>\n');
+    res.write('<activity:verb>'+item.verb+'</activity:verb>\n');
 
     if (item.summary) {
         res.write('<summary>'+stripTags(sanitize(item.summary).entityDecode())+'</summary>\n');
