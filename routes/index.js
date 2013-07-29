@@ -24,6 +24,14 @@ var validator = require("validator"),
     pump2rss = require("../models/pump2rss"),
     sanitize = validator.sanitize;
 
+var simplify = function(id) {
+    if (id.substr(0, 5) == 'acct:') {
+        return id.substr(5);
+    } else {
+        return id;
+    }
+};
+        
 exports.hostmeta = function(req, res) {
     res.json({
         links: [
@@ -41,7 +49,7 @@ exports.index = function(req, res, next) {
 
 exports.redirectFeed = function(req, res, next) {
     var webfinger = req.body.webfinger;
-    res.redirect(pump2rss.url("/feed/"+webfinger), 303);
+    res.redirect(pump2rss.url("/feed/"+simplify(webfinger)+'.atom'), 303);
 };
 
 exports.showFeed = function(req, res, next) {
@@ -75,14 +83,14 @@ exports.showFeed = function(req, res, next) {
 
 var atomFeedStart = function(res, user) {
 
-    var url = pump2rss.url("/feed/"+ user.id);
+    var url = pump2rss.url("/feed/"+ simplify(user.id) + '.atom');
 
     res.write('<?xml version="1.0" encoding="utf-8"?>\n');
     res.write('<feed xmlns="http://www.w3.org/2005/Atom" xmlns:activity="http://activitystrea.ms/spec/1.0/">\n');
-    res.write('<title>'+user.name+'\'s activity stream</title>\n');
+    res.write('<title>'+user.displayName+'\'s activity stream</title>\n');
     res.write('<link href="'+ url + '"/>\n');
-    res.write('<updated>'+(new Date()).toISOString()+'</updated>');
-    res.write('<id>'+url+'</id>');
+    res.write('<updated>'+(new Date()).toISOString()+'</updated>\n');
+    res.write('<id>'+url+'</id>\n');
 };
 
 var userAsAuthor = function(res, user) {
@@ -119,12 +127,16 @@ var activityObject = function(res, user, obj, tag) {
     if (tag == 'author') {
         res.write('<name>'+obj.displayName+'</name>\n');
     } else {
-        res.write('<title>'+obj.displayName+'</title>\n');
+        res.write('<title>'+((obj.displayName) ? obj.displayName : '')+'</title>\n');
     }
 
-    res.write('<published>'+obj.published+'</published>\n');
+    if (obj.published) {
+        res.write('<published>'+obj.published+'</published>\n');
+    }
 
-    res.write('<updated>'+obj.updated+'</updated>\n');
+    if (obj.updated) {
+        res.write('<updated>'+obj.updated+'</updated>\n');
+    }
 
     res.write('<activity:object-type>'+obj.objectType+'</activity:object-type>\n');
 
@@ -170,8 +182,6 @@ var activityAsFullEntry = function(res, user, item) {
 
     res.write('<activity:verb>'+item.verb+'</activity.verb>\n');
 
-    res.write('<activity:object-type>'+item.objectType+'</activity:object-type>\n');
-
     if (item.summary) {
         res.write('<summary>'+stripTags(sanitize(item.summary).entityDecode())+'</summary>\n');
     }
@@ -200,7 +210,7 @@ var activityAsFullEntry = function(res, user, item) {
 };
 
 var feedAsAtom = function(feed, user, res) {
-    res.type("application/atom+xml");
+    res.header("Content-Type", "application/atom+xml");
     atomFeedStart(res, user);
     userAsAuthor(res, user);
     _.each(feed.items, function(item) {

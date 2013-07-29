@@ -218,7 +218,7 @@ async.waterfall([
 
         app.get('/', routes.index);
         app.post('/feed', routes.redirectFeed);
-        app.get('/feed/:webfinger', reqUser, routes.showFeed);
+        app.get('/feed/:webfinger.atom', reqUser, routes.showFeed);
         app.get('/.well-known/host-meta.json', routes.hostmeta);
 
         // Create a dialback client

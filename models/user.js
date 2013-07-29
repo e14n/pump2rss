@@ -39,7 +39,7 @@ User.schema = {
 };
 
 User.ensureUser = function(webfinger, callback) {
-    User.get(webfinger, function(err, user) {
+    User.get(User.canonical(webfinger), function(err, user) {
         if (err && err.name == "NoSuchThingError") {
             User.discover(webfinger, callback);
         } else if (err) {
@@ -59,7 +59,19 @@ User.discover = function(webfinger, callback) {
             wf.webfinger(webfinger, "self", callback);
         },
         function(results, callback) {
-            selfLink = results;
+            var selfies;
+            if (!results || !results.links) {
+                callback(new Error("No self link in Webfinger representation"), null);
+                return;
+            }
+            selfies = _.filter(results.links, function(link) {
+                return link.rel == "self";
+            });
+            if (selfies.length === 0) {
+                callback(new Error("No self link in Webfinger representation"), null);
+                return;
+            }
+            selfLink = selfies[0].href;
             Host.ensureHost(User.getHostname(webfinger), callback);
         },
         function(host, callback) {
@@ -107,6 +119,14 @@ User.prototype.getHost = function(callback) {
         hostname = User.getHostname(user.id);
 
     Host.get(hostname, callback);
+};
+
+User.canonical = function(id) {
+    if (id.substr(0, 5) == "acct:") {
+        return id;
+    } else {
+        return "acct:"+id;
+    }
 };
 
 module.exports = User;
