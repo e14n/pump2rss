@@ -178,7 +178,7 @@ var activityAsFullEntry = function(res, user, item) {
 
     res.write('<published>'+item.published+'</published>\n');
 
-    res.write('<title>'+item.displayName+'</title>\n');
+    res.write('<title>'+((item.displayName) ? item.displayName : '')+'</title>\n');
 
     res.write('<activity:verb>'+item.verb+'</activity:verb>\n');
 
