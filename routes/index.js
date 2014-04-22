@@ -127,7 +127,9 @@ var activityObject = function(res, user, obj, tag) {
     if (tag == 'author') {
         res.write('<name>'+obj.displayName+'</name>\n');
     } else {
-        res.write('<title>'+((obj.displayName) ? obj.displayName : '')+'</title>\n');
+      res.write('<title>'+((obj.displayName) ? obj.displayName :
+	    ((obj.summary) ? stripTags(sanitize(obj.summary).entityDecode()) :
+	     ((obj.content) ? stripTags(sanitize(obj.content).entityDecode) : '' )))+'</title>\n');
     }
 
     if (obj.published) {
