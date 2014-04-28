@@ -258,7 +258,7 @@ async.waterfall([
 
         // Start the bouncer
 
-        if (bounce) {
+        if (config.bounce) {
             log.info({port: 80, address: config.address}, "Starting bounce listener");
             bounce.listen(80, config.address);
         }
